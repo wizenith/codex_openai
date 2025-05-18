@@ -69,7 +69,6 @@ func applyBinaryOp(stack []float64, op string) ([]float64, error) {
 }
 
 // TokenProcessor processes a single token, updating the evaluation stack.
-// TokenProcessor processes a single token, updating the evaluation stack.
 func TokenProcessor(stack []float64, tok string) ([]float64, error) {
 	if _, ok := binaryOps[tok]; ok {
 		return applyBinaryOp(stack, tok)
