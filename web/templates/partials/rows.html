@@ -1,7 +1,27 @@
 {{ range . }}
-<tr>
+<tr id="task-{{ .ID }}" class="task-row task-{{ .Status }}">
     <td>{{ .ID }}</td>
     <td>{{ .Name }}</td>
-    <td>{{ .Status }}</td>
+    <td>{{ .Type }}</td>
+    <td>
+        <span class="priority-badge priority-{{ .Priority }}">{{ .Priority }}</span>
+    </td>
+    <td>
+        <span class="status-badge status-{{ .Status }}">{{ .Status }}</span>
+    </td>
+    <td>{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+    <td>
+        {{ if or (eq .Status "pending") (eq .Status "queued") }}
+        <button class="btn btn-small btn-danger delete-task" 
+                data-task-id="{{ .ID }}">Cancel</button>
+        {{ else }}
+        <button class="btn btn-small btn-secondary" 
+                onclick="viewTaskDetails({{ .ID }})">View</button>
+        {{ end }}
+    </td>
+</tr>
+{{ else }}
+<tr>
+    <td colspan="7" class="text-center">No tasks found</td>
 </tr>
 {{ end }}

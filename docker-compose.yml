@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: taskqueue
+      POSTGRES_PASSWORD: taskqueue_password
+      POSTGRES_DB: taskqueue_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskqueue"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Go API Server
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      LOG_LEVEL: info
+      DATABASE_URL: postgres://taskqueue:taskqueue_password@postgres:5432/taskqueue_db?sslmode=disable
+      JWT_SECRET: your-secret-jwt-key-change-in-production
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URL: http://localhost:8080/auth/google/callback
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SQS_QUEUE_URL: ${AWS_SQS_QUEUE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./web:/root/web
+
+  # Python Worker
+  python-worker:
+    build: ./workers/python
+    environment:
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SQS_QUEUE_URL: ${AWS_SQS_QUEUE_URL}
+      DATABASE_URL: postgres://taskqueue:taskqueue_password@postgres:5432/taskqueue_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+
+  # Node.js Worker
+  nodejs-worker:
+    build: ./workers/nodejs
+    environment:
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SQS_QUEUE_URL: ${AWS_SQS_QUEUE_URL}
+      DATABASE_URL: postgres://taskqueue:taskqueue_password@postgres:5432/taskqueue_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+
+volumes:
+  postgres_data:

@@ -1,0 +1,17 @@
+{
+  "name": "taskqueue-nodejs-worker",
+  "version": "1.0.0",
+  "description": "Node.js worker for task queue system",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1500.0",
+    "axios": "^1.6.0",
+    "pg": "^8.11.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
