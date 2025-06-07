@@ -8,6 +8,7 @@ import (
 
 	"taskqueue/internal/config"
 	"taskqueue/internal/database"
+	"taskqueue/internal/handlers"
 	"taskqueue/internal/queue"
 	"taskqueue/pkg/logger"
 )
@@ -17,6 +18,8 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
+	r.LoadHTMLGlob("web/templates/**/*.html")
+	r.Static("/static", "web/static")
 
 	ctx := context.Background()
 
@@ -33,6 +36,9 @@ func main() {
 		return
 	}
 
+	taskHandler := &handlers.TaskHandler{DB: db, Q: q}
+	webHandler := &handlers.WebHandler{}
+
 	r.GET("/healthz", func(c *gin.Context) {
 		if err := db.Ping(ctx); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "db unreachable"})
@@ -41,22 +47,11 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	r.POST("/api/tasks", func(c *gin.Context) {
-		// simplified task enqueue example
-		var req struct {
-			Payload string `json:"payload"`
-		}
-		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		id, err := q.Enqueue(ctx, req.Payload)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enqueue"})
-			return
-		}
-		c.JSON(http.StatusAccepted, gin.H{"message_id": id})
-	})
+	r.POST("/api/tasks", taskHandler.Create)
+	r.GET("/api/tasks", taskHandler.List)
+
+	r.GET("/login", webHandler.Login)
+	r.GET("/", webHandler.Dashboard)
 
 	logger.Info("starting server on", cfg.Port)
 	r.Run(":" + cfg.Port)
