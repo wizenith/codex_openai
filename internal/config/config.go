@@ -16,6 +16,7 @@ type Config struct {
 	GoogleRedirect string
 	AWSRegion      string
 	SQSQueueURL    string
+	LogLevel       string
 }
 
 // Load reads environment variables into Config.
@@ -29,6 +30,7 @@ func Load() *Config {
 		GoogleRedirect: os.Getenv("GOOGLE_REDIRECT_URL"),
 		AWSRegion:      getEnv("AWS_REGION", "us-east-1"),
 		SQSQueueURL:    os.Getenv("AWS_SQS_QUEUE_URL"),
+		LogLevel:       getEnv("LOG_LEVEL", "info"),
 	}
 	if cfg.JWTSecret == "" {
 		log.Println("warning: JWT_SECRET not set")

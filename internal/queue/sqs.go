@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
 // Client wraps AWS SQS.
@@ -36,4 +37,13 @@ func (c *Client) Enqueue(ctx context.Context, body string) (string, error) {
 		return "", err
 	}
 	return aws.ToString(out.MessageId), nil
+}
+
+// HealthCheck verifies the queue is reachable.
+func (c *Client) HealthCheck(ctx context.Context) error {
+	_, err := c.svc.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
+		QueueUrl:       aws.String(c.queueURL),
+		AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+	})
+	return err
 }
